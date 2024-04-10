@@ -17,4 +17,5 @@ jobs:
           version: nightly
 
       - name: Run tests
-        run: forge test -vvv
+        working-directory: MemecoinCooker/
+        run: ./forge test -vvv
