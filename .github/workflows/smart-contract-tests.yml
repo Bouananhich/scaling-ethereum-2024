@@ -18,4 +18,4 @@ jobs:
 
       - name: Run tests
         working-directory: MemecoinCooker/
-        run: ./forge test -vvv
+        run: forge test -vvv
