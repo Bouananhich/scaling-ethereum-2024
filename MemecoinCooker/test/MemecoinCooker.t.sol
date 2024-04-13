@@ -8,7 +8,7 @@ import {MemecoinCooker} from "../src/MemecoinCooker.sol";
 contract MemecoinCookerTest is Test{
     MemecoinCooker cooker;
 
-    function setup() public {
+    function setUp() public {
         cooker = new MemecoinCooker();
     }
 
