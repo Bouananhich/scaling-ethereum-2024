@@ -33,7 +33,7 @@ contract TokenFactoryTest is Test{
     }
 
     function testOwner() public {
-        bool _isOwner = (factory.owner() == ownerAddress);
+        bool _isOwner = (factory.factoryOwner() == ownerAddress);
         assertEq(_isOwner, true, "Owner should be the contract creator");
     }
 

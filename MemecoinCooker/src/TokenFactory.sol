@@ -10,23 +10,36 @@ contract myToken is ERC20 {
 }
 
 contract TokenFactory {
-    address public owner;
-    address public adminContract;
-    mapping (address => address) public token2Owner;
+    address _owner;
+    address _adminContract;
+    mapping (address => address) _token2Owner;
 
     constructor() {
-        owner = msg.sender;
+        _owner = msg.sender;
     }
 
-    function setAdminContract(address _adminContract) public {
-        require(msg.sender == owner, "Only owner can set admin contract");
-        adminContract = _adminContract;
+    function setAdminContract(address myadminContract) public {
+        require(msg.sender == _owner, "Only owner can set admin contract");
+        _adminContract = myadminContract;
     }
 
     function issueToken(string memory _name, string memory _symbol, uint256 _totalSupply, address _to) public returns (address) {
-        require(msg.sender == adminContract, "Only admin contract can issue token");
-        myToken newToken = new myToken(_name, _symbol, _totalSupply, adminContract);
-        token2Owner[address(newToken)] = _to;
+        require(_adminContract != address(0), "Admin contract not set");
+        require(msg.sender == _adminContract, "Only admin contract can issue token");
+        myToken newToken = new myToken(_name, _symbol, _totalSupply, _adminContract);
+        _token2Owner[address(newToken)] = _to;
         return address(newToken);
+    }
+
+    function factoryOwner() public view returns (address) {
+        return _owner;
+    }
+
+    function adminContract() public view returns (address) {
+        return _adminContract;
+    }
+
+    function token2Owner(address _token) public view returns (address) {
+        return _token2Owner[_token];
     }
 }
