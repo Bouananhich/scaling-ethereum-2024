@@ -1,3 +1,4 @@
 MemecoinCooker/keys.env
 MemecoinCooker/.env
-MemecoinCooker/cache
+MemecoinCooker/cache/
+MemecoinCooker/out/
