@@ -7,3 +7,6 @@
 [submodule "MemecoinCooker/lib/v2-core"]
 	path = MemecoinCooker/lib/v2-core
 	url = https://github.com/Uniswap/v2-core
+[submodule "MemecoinCooker/lib/v2-periphery"]
+	path = MemecoinCooker/lib/v2-periphery
+	url = https://github.com/Uniswap/v2-periphery
