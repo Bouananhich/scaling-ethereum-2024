@@ -6,72 +6,58 @@ import {IFactory} from "./IFactory.sol";
 import {IUniswapV2Factory} from "../lib/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {IUniswapV2Pair} from "../lib/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
+import {IUniswapV2Router02} from "../lib/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 
 contract MemecoinCooker {
 
-    address _factoryContract;
+    address _token_factory_contract;
     address _owner;
-    address _uniswapv2FactoryAddress;
-    address _wethAddress;
-    mapping (address => address) public _token2Pool;
+    address _uniswap_v2_router_address;
+    mapping (address => address) public _token_to_pair;
 
     constructor(address myfactoryContract) {
         _owner = msg.sender;
-        _factoryContract = myfactoryContract;
+        _token_factory_contract = myfactoryContract;
     }
 
-    function setUniswapv2Factory(address myuniswapFactoryAddress) public {
+    function setUniswapv2Router(address myUniswapRouterAddress) public {
         require(msg.sender == _owner, "Only owner can set uniswap factory");
-        _uniswapv2FactoryAddress = myuniswapFactoryAddress;
+        _uniswap_v2_router_address = myUniswapRouterAddress;
     }
 
-    function setFactoryContract(address myfactoryContract) public {
+    function setFactoryContract(address myTokenFactoryContract) public {
         require(msg.sender == _owner, "Only owner can set factory contract");
-        _factoryContract = myfactoryContract;
-    }
-
-    function setWethAddress(address mywethAddress) public {
-        require(msg.sender == _owner, "Only owner can set WETH address");
-        _wethAddress = mywethAddress;
-    }
-
-    function wethAddress() public view returns (address) {
-        return _wethAddress;
+        _token_factory_contract = myTokenFactoryContract;
     }
 
     function MemecoinCookerOwner() public view returns (address) {
         return _owner;
     }
 
-    function factoryContract() public view returns (address) {
-        return _factoryContract;
+    function tokenFactoryContract() public view returns (address) {
+        return _token_factory_contract;
     }
 
-    function uniswapv2FactoryAddress() public view returns (address) {
-        return _uniswapv2FactoryAddress;
+    function uniswapv2RouterAddress() public view returns (address) {
+        return _uniswap_v2_router_address;
     }
 
     function cookMemecoin(string memory name, string memory symbol, uint256 totalSupply) public returns (address) {
-        IFactory factory = IFactory(_factoryContract);
+        IFactory factory = IFactory(_token_factory_contract);
         return factory.issueToken(name, symbol, totalSupply, msg.sender);
     }
 
-    function deploy_on_uniswapv2(address memecoin_address, uint256 weth_amount) public {
-        require(_uniswapv2FactoryAddress != address(0), "Uniswap factory not set");
-        IFactory factory = IFactory(_factoryContract);
-        require(msg.sender == factory.token2Owner(memecoin_address), "Only token owner can deploy the token");
-        IERC20 weth = IERC20(_wethAddress);
-        require(weth.allowance(msg.sender, address(this)) >= weth_amount, "Insufficient WETH allowance");
- 
-        createPair(memecoin_address);
-        weth.transferFrom(msg.sender, address(this), weth_amount);
-    }
+    function deploy_on_uniswapv2(address memecoin_address, uint256 eth_amount, uint256 memecoin_amount) public payable {
+        require(_uniswap_v2_router_address != address(0), "Uniswap factory not set");
 
-    function createPair(address memecoin_address) internal returns (address) {
-        IUniswapV2Factory uniswapFactory = IUniswapV2Factory(_uniswapv2FactoryAddress);
-        address pair = uniswapFactory.createPair(memecoin_address, _wethAddress);
-        _token2Pool[memecoin_address] = pair;
-        return pair;
+        IFactory factory = IFactory(_token_factory_contract);
+        require(msg.sender == factory.token2Owner(memecoin_address), "Only token owner can deploy the token");
+        
+        IERC20 memecoin = IERC20(memecoin_address);
+        memecoin.approve(_uniswap_v2_router_address, memecoin_amount);
+
+        IUniswapV2Router02 uniswapRouter = IUniswapV2Router02(_uniswap_v2_router_address);
+        (uint amountToken, uint amountETH, uint liquidity) = uniswapRouter.addLiquidityETH{value: eth_amount}(memecoin_address, memecoin_amount, 0, 0, address(this), block.timestamp);
     }
 
 }
