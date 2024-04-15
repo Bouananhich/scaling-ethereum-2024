@@ -13,7 +13,7 @@ contract MemecoinCooker {
     address _token_factory_contract;
     address _owner;
     address _uniswap_v2_router_address;
-    mapping (address => address) public _token_to_pair;
+    mapping (address => address) public _memecoin_to_LP_token;
 
     constructor(address myfactoryContract) {
         _owner = msg.sender;
@@ -58,6 +58,8 @@ contract MemecoinCooker {
 
         IUniswapV2Router02 uniswapRouter = IUniswapV2Router02(_uniswap_v2_router_address);
         (uint amountToken, uint amountETH, uint liquidity) = uniswapRouter.addLiquidityETH{value: eth_amount}(memecoin_address, memecoin_amount, 0, 0, address(this), block.timestamp);
+        address pair = IUniswapV2Factory(uniswapRouter.factory()).getPair(address(memecoin), uniswapRouter.WETH());
+        _memecoin_to_LP_token[memecoin_address] = pair;
     }
 
 }
