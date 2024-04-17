@@ -9,12 +9,11 @@ import {IUniswapV2Pair} from "../lib/v2-core/contracts/interfaces/IUniswapV2Pair
 import {IUniswapV2Router02} from "../lib/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 
 contract MemecoinCooker {
-
     address _token_factory_contract;
     address _owner;
     address _uniswap_v2_router_address;
-    mapping (address => address) public _memecoin_to_pair;
-    mapping (address => uint256) public _memecoin_to_timestamp;
+    mapping(address => address) public _memecoin_to_pair;
+    mapping(address => uint256) public _memecoin_to_timestamp;
     uint256 constant _liquidity_lock_duration = 30 days;
 
     event MemecoinCreated(address memecoin, address owner);
@@ -68,23 +67,28 @@ contract MemecoinCooker {
 
         IFactory factory = IFactory(_token_factory_contract);
         require(msg.sender == factory.token2Owner(memecoin_address), "Only token owner can deploy the token");
-        
+
         IERC20 memecoin = IERC20(memecoin_address);
         require(memecoin.approve(_uniswap_v2_router_address, memecoin_amount), "Approval failed");
         IUniswapV2Router02 uniswapRouter = IUniswapV2Router02(_uniswap_v2_router_address);
         address uniswap_factory = uniswapRouter.factory();
         address weth = uniswapRouter.WETH();
         address pair = IUniswapV2Factory(uniswap_factory).createPair(memecoin_address, weth);
-        (uint amountToken, uint amountETH, uint liquidity) = uniswapRouter.addLiquidityETH{value: msg.value}(memecoin_address, memecoin_amount, 0, 0, address(this), block.timestamp);
+        (uint256 amountToken, uint256 amountETH, uint256 liquidity) = uniswapRouter.addLiquidityETH{value: msg.value}(
+            memecoin_address, memecoin_amount, 0, 0, address(this), block.timestamp
+        );
         _memecoin_to_pair[memecoin_address] = pair;
         _memecoin_to_timestamp[memecoin_address] = block.timestamp;
         emit MemecoinDeployed(memecoin_address, pair);
     }
 
-    function unlockLiquidity(address memecoin_address) public returns (bool){
+    function unlockLiquidity(address memecoin_address) public returns (bool) {
         require(_uniswap_v2_router_address != address(0), "Uniswap router address not set");
         require(_memecoin_to_pair[memecoin_address] != address(0), "Pair not found");
-        require(msg.sender == IFactory(_token_factory_contract).token2Owner(memecoin_address), "Only owner can unlock liquidity");
+        require(
+            msg.sender == IFactory(_token_factory_contract).token2Owner(memecoin_address),
+            "Only owner can unlock liquidity"
+        );
         require(remainingLiquidityLockTime(memecoin_address) == 0, "Liquidity lock time not over");
         address pair = _memecoin_to_pair[memecoin_address];
         IERC20(pair).transfer(msg.sender, IERC20(pair).balanceOf(address(this)));
@@ -94,5 +98,4 @@ contract MemecoinCooker {
     receive() external payable {}
 
     fallback() external payable {}
-
 }
