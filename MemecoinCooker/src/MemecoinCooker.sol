@@ -47,19 +47,26 @@ contract MemecoinCooker {
         return factory.issueToken(name, symbol, totalSupply, msg.sender);
     }
 
-    function deploy_on_uniswapv2(address memecoin_address, uint256 eth_amount, uint256 memecoin_amount) public payable {
+    function deploy_on_uniswapv2(address memecoin_address, uint256 memecoin_amount) public payable {
         require(_uniswap_v2_router_address != address(0), "Uniswap factory not set");
 
         IFactory factory = IFactory(_token_factory_contract);
         require(msg.sender == factory.token2Owner(memecoin_address), "Only token owner can deploy the token");
         
         IERC20 memecoin = IERC20(memecoin_address);
-        memecoin.approve(_uniswap_v2_router_address, memecoin_amount);
-
+        require(memecoin.approve(_uniswap_v2_router_address, memecoin_amount), "Approval failed");
         IUniswapV2Router02 uniswapRouter = IUniswapV2Router02(_uniswap_v2_router_address);
-        (uint amountToken, uint amountETH, uint liquidity) = uniswapRouter.addLiquidityETH{value: eth_amount}(memecoin_address, memecoin_amount, 0, 0, address(this), block.timestamp);
-        address pair = IUniswapV2Factory(uniswapRouter.factory()).getPair(address(memecoin), uniswapRouter.WETH());
-        _memecoin_to_LP_token[memecoin_address] = pair;
+        address uniswap_factory = uniswapRouter.factory();
+        address weth = uniswapRouter.WETH();
+        address pair = IUniswapV2Factory(uniswap_factory).createPair(memecoin_address, weth);
+        (uint amountToken, uint amountETH, uint liquidity) = uniswapRouter.addLiquidityETH{value: msg.value}(memecoin_address, memecoin_amount, 0, 0, address(this), block.timestamp);
+        require(liquidity > 0, "Liquidity not added");
+        //address pair = IUniswapV2Factory(uniswapRouter.factory()).getPair(address(memecoin), uniswapRouter.WETH());
+        //_memecoin_to_LP_token[memecoin_address] = pair;
     }
+
+    receive() external payable {}
+
+    fallback() external payable {}
 
 }
