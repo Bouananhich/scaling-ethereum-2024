@@ -13,7 +13,13 @@ contract MemecoinCooker {
     address _token_factory_contract;
     address _owner;
     address _uniswap_v2_router_address;
-    mapping (address => address) public _memecoin_to_LP_token;
+    mapping (address => address) public _memecoin_to_pair;
+    mapping (address => uint256) public _memecoin_to_timestamp;
+    uint256 constant _liquidity_lock_duration = 30 days;
+
+    event MemecoinCreated(address memecoin, address owner);
+
+    event MemecoinDeployed(address memecoin, address pair);
 
     constructor(address myfactoryContract) {
         _owner = msg.sender;
@@ -23,11 +29,6 @@ contract MemecoinCooker {
     function setUniswapv2Router(address myUniswapRouterAddress) public {
         require(msg.sender == _owner, "Only owner can set uniswap factory");
         _uniswap_v2_router_address = myUniswapRouterAddress;
-    }
-
-    function setFactoryContract(address myTokenFactoryContract) public {
-        require(msg.sender == _owner, "Only owner can set factory contract");
-        _token_factory_contract = myTokenFactoryContract;
     }
 
     function MemecoinCookerOwner() public view returns (address) {
@@ -42,13 +43,28 @@ contract MemecoinCooker {
         return _uniswap_v2_router_address;
     }
 
+    function isTokenFromMemecoinCooker(address token) public view returns (bool) {
+        return IFactory(_token_factory_contract).token2Deployed(token);
+    }
+
+    function remainingLiquidityLockTime(address memecoin_address) public view returns (uint256) {
+        require(_memecoin_to_pair[memecoin_address] != address(0), "Pair not found");
+        uint256 timestamp = _memecoin_to_timestamp[memecoin_address];
+        if (block.timestamp > timestamp + _liquidity_lock_duration) {
+            return 0;
+        }
+        return timestamp + _liquidity_lock_duration - block.timestamp;
+    }
+
     function cookMemecoin(string memory name, string memory symbol, uint256 totalSupply) public returns (address) {
         IFactory factory = IFactory(_token_factory_contract);
-        return factory.issueToken(name, symbol, totalSupply, msg.sender);
+        address memecoin_address = factory.issueToken(name, symbol, totalSupply, msg.sender);
+        emit MemecoinCreated(memecoin_address, msg.sender);
+        return memecoin_address;
     }
 
     function deploy_on_uniswapv2(address memecoin_address, uint256 memecoin_amount) public payable {
-        require(_uniswap_v2_router_address != address(0), "Uniswap factory not set");
+        require(_uniswap_v2_router_address != address(0), "Uniswap router address not set");
 
         IFactory factory = IFactory(_token_factory_contract);
         require(msg.sender == factory.token2Owner(memecoin_address), "Only token owner can deploy the token");
@@ -60,9 +76,19 @@ contract MemecoinCooker {
         address weth = uniswapRouter.WETH();
         address pair = IUniswapV2Factory(uniswap_factory).createPair(memecoin_address, weth);
         (uint amountToken, uint amountETH, uint liquidity) = uniswapRouter.addLiquidityETH{value: msg.value}(memecoin_address, memecoin_amount, 0, 0, address(this), block.timestamp);
-        require(liquidity > 0, "Liquidity not added");
-        //address pair = IUniswapV2Factory(uniswapRouter.factory()).getPair(address(memecoin), uniswapRouter.WETH());
-        //_memecoin_to_LP_token[memecoin_address] = pair;
+        _memecoin_to_pair[memecoin_address] = pair;
+        _memecoin_to_timestamp[memecoin_address] = block.timestamp;
+        emit MemecoinDeployed(memecoin_address, pair);
+    }
+
+    function unlockLiquidity(address memecoin_address) public returns (bool){
+        require(_uniswap_v2_router_address != address(0), "Uniswap router address not set");
+        require(_memecoin_to_pair[memecoin_address] != address(0), "Pair not found");
+        require(msg.sender == IFactory(_token_factory_contract).token2Owner(memecoin_address), "Only owner can unlock liquidity");
+        require(remainingLiquidityLockTime(memecoin_address) == 0, "Liquidity lock time not over");
+        address pair = _memecoin_to_pair[memecoin_address];
+        IERC20(pair).transfer(msg.sender, IERC20(pair).balanceOf(address(this)));
+        return true;
     }
 
     receive() external payable {}
