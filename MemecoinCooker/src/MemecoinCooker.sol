@@ -15,6 +15,7 @@ contract MemecoinCooker {
     mapping(address => address) public _memecoin_to_pair;
     mapping(address => uint256) public _memecoin_to_timestamp;
     uint256 constant _liquidity_lock_duration = 30 days;
+    uint256 constant MAXIMUM_INITIAL_PERCENTAGE = 10;
 
     event MemecoinCreated(address memecoin, address owner);
 
@@ -62,14 +63,27 @@ contract MemecoinCooker {
         return memecoin_address;
     }
 
-    function deploy_on_uniswapv2(address memecoin_address, uint256 memecoin_amount) public payable {
+    function deploy_on_uniswapv2(
+        address memecoin_address,
+        address[] calldata initial_holders,
+        uint256[] calldata initial_amounts
+    ) public payable {
         require(_uniswap_v2_router_address != address(0), "Uniswap router address not set");
-
         IFactory factory = IFactory(_token_factory_contract);
         require(msg.sender == factory.token2Owner(memecoin_address), "Only token owner can deploy the token");
-
+        require(initial_amounts.length == initial_holders.length, "Initial holders and amounts sizes don't match");
         IERC20 memecoin = IERC20(memecoin_address);
+        uint256 total_initial_amount = 0;
+        uint256 memecoin_amount = memecoin.totalSupply();
+        for (uint256 i = 0; i < initial_amounts.length; i++) {
+            total_initial_amount += initial_amounts[i];
+        }
+        require(total_initial_amount <= memecoin_amount * MAXIMUM_INITIAL_PERCENTAGE / 100, "Invalid initial amounts");
         require(memecoin.approve(_uniswap_v2_router_address, memecoin_amount), "Approval failed");
+        for (uint256 i = 0; i < initial_holders.length; i++) {
+            memecoin.transfer(initial_holders[i], initial_amounts[i]);
+        }
+        memecoin_amount -= total_initial_amount;
         IUniswapV2Router02 uniswapRouter = IUniswapV2Router02(_uniswap_v2_router_address);
         address uniswap_factory = uniswapRouter.factory();
         address weth = uniswapRouter.WETH();
@@ -94,8 +108,4 @@ contract MemecoinCooker {
         IERC20(pair).transfer(msg.sender, IERC20(pair).balanceOf(address(this)));
         return true;
     }
-
-    receive() external payable {}
-
-    fallback() external payable {}
 }
