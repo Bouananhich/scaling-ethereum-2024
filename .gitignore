@@ -1,2 +1,6 @@
 MemecoinCooker/keys.env
 MemecoinCooker/.env
+MemecoinCooker/cache/
+MemecoinCooker/out/
+MemecoinCooker/broadcast/Myscript.s.sol/11155111/run-latest.json
+MemecoinCooker/broadcast/Myscript.s.sol/11155111/run-1713346032.json

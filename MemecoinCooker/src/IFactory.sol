@@ -8,4 +8,5 @@ interface IFactory {
     function factoryOwner() external view returns (address);
     function adminContract() external view returns (address);
     function token2Owner(address _token) external view returns (address);
+    function token2Deployed(address _token) external view returns (bool);
 }
