@@ -4,3 +4,12 @@
 [submodule "MemecoinCooker/lib/openzeppelin-contracts"]
 	path = MemecoinCooker/lib/openzeppelin-contracts
 	url = https://github.com/openzeppelin/openzeppelin-contracts
+[submodule "MemecoinCooker/lib/v2-core"]
+	path = MemecoinCooker/lib/v2-core
+	url = https://github.com/Uniswap/v2-core
+[submodule "MemecoinCooker/lib/v2-periphery"]
+	path = MemecoinCooker/lib/v2-periphery
+	url = https://github.com/Uniswap/v2-periphery
+[submodule "MemecoinCooker/lib/solidity-lib"]
+	path = MemecoinCooker/lib/solidity-lib
+	url = https://github.com/Uniswap/solidity-lib
