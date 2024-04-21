@@ -7,7 +7,13 @@ const Home: NextPage = () => {
   const { isConnected } = useAccount();
 
   return (
-    <Layout>{isConnected ? <TokenCreationForm /> : <div>Salut !</div>}</Layout>
+    <Layout>
+      {isConnected ? (
+        <TokenCreationForm />
+      ) : (
+        <div>Start by connecting your wallet.</div>
+      )}
+    </Layout>
   );
 };
 
