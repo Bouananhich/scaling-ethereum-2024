@@ -16,7 +16,7 @@ import { getDefaultConfig, RainbowKitProvider } from "@rainbow-me/rainbowkit";
 
 const config = getDefaultConfig({
   appName: "RainbowKit App",
-  projectId: "YOUR_PROJECT_ID",
+  projectId: "6830c21c8778cbf1a1a567b8bc1b18ca", //TODO: Put in an env variable
   chains: [
     mainnet,
     polygon,
